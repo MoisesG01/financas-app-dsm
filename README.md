@@ -15,7 +15,6 @@ Aplicativo mobile React Native com Expo para gerenciamento de finanças pessoais
 
 - ✅ Login e Cadastro de usuários
 - ✅ Dashboard com resumo financeiro
-- ✅ CRUD completo de transações
 - ✅ CRUD completo de categorias
 - ✅ Filtros de transações (tipo, data, categoria)
 - ✅ Perfil do usuário
@@ -56,7 +55,6 @@ Ou para plataforma específica:
 
 ```bash
 npm run android  # Android
-npm run ios     # iOS
 npm run web     # Web
 ```
 
@@ -88,7 +86,6 @@ frontend/
 
 ## 📝 Notas
 
-- O app consome a API backend criada anteriormente
 - O token JWT é armazenado de forma segura
 - Todas as requisições incluem autenticação automática
 - Design responsivo e moderno
