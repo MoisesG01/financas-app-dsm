@@ -61,9 +61,17 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    await storage.clearAll();
-    setUser(null);
-    setIsAuthenticated(false);
+    console.log('AuthContext: logout chamado');
+    try {
+      await storage.clearAll();
+      console.log('AuthContext: storage limpo');
+      setUser(null);
+      setIsAuthenticated(false);
+      console.log('AuthContext: estado atualizado');
+    } catch (error) {
+      console.error('AuthContext: erro no logout:', error);
+      throw error;
+    }
   };
 
   const atualizarPerfil = async (nome, email) => {
@@ -94,6 +102,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const deletarConta = async () => {
+    console.log('AuthContext: deletarConta chamado');
+    try {
+      console.log('AuthContext: chamando usuarioService.deletar()...');
+      await usuarioService.deletar();
+      console.log('AuthContext: conta deletada no backend');
+      await storage.clearAll();
+      console.log('AuthContext: storage limpo');
+      setUser(null);
+      setIsAuthenticated(false);
+      console.log('AuthContext: estado atualizado');
+      return { success: true };
+    } catch (error) {
+      console.error('AuthContext: erro ao deletar conta:', error);
+      return {
+        success: false,
+        error: error.response?.data?.erro || error.message || 'Erro ao excluir conta',
+      };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -105,6 +134,7 @@ export const AuthProvider = ({ children }) => {
         logout,
         atualizarPerfil,
         carregarPerfil,
+        deletarConta,
       }}
     >
       {children}

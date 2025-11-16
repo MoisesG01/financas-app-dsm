@@ -5,11 +5,12 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { colors } from '../theme/colors';
@@ -17,12 +18,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function PerfilScreen() {
-  const { user, atualizarPerfil, logout, carregarPerfil } = useAuth();
+  const { user, atualizarPerfil, logout, carregarPerfil, deletarConta } = useAuth();
   const { showToast } = useToast();
   const [nome, setNome] = useState(user?.nome || '');
   const [email, setEmail] = useState(user?.email || '');
   const [loading, setLoading] = useState(false);
   const [editando, setEditando] = useState(false);
+  const [deletando, setDeletando] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -51,39 +55,50 @@ export default function PerfilScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert('Sair', 'Tem certeza que deseja sair?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sair',
-        style: 'destructive',
-        onPress: () => {
-          logout();
-          showToast('Logout realizado com sucesso', 'info');
-        },
-      },
-    ]);
+    console.log('handleLogout chamado');
+    setShowLogoutDialog(true);
+  };
+
+  const confirmLogout = async () => {
+    console.log('Confirmando logout...');
+    setShowLogoutDialog(false);
+    try {
+      console.log('Chamando logout...');
+      await logout();
+      console.log('Logout concluído');
+    } catch (error) {
+      console.error('Erro no logout:', error);
+      showToast('Erro ao fazer logout', 'error');
+    }
   };
 
   const handleDeletarConta = () => {
-    Alert.alert(
-      'Excluir Conta',
-      'Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              // Implementar deleção de conta se necessário
-              showToast('Funcionalidade em desenvolvimento', 'warning');
-            } catch (error) {
-              showToast('Erro ao excluir conta', 'error');
-            }
-          },
-        },
-      ]
-    );
+    console.log('handleDeletarConta chamado');
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    console.log('Confirmando exclusão...');
+    setShowDeleteDialog(false);
+    setDeletando(true);
+    try {
+      console.log('Chamando deletarConta...');
+      const result = await deletarConta();
+      console.log('Resultado deletarConta:', result);
+      if (result.success) {
+        console.log('Conta excluída com sucesso');
+        // Não mostrar toast aqui pois o componente será desmontado
+        // A navegação será redirecionada automaticamente pelo AppNavigator
+      } else {
+        console.error('Erro ao excluir conta:', result.error);
+        showToast(result.error || 'Erro ao excluir conta', 'error');
+      }
+    } catch (error) {
+      console.error('Erro ao excluir conta (catch):', error);
+      showToast('Erro ao excluir conta', 'error');
+    } finally {
+      setDeletando(false);
+    }
   };
 
   const getInitials = (name) => {
@@ -197,9 +212,13 @@ export default function PerfilScreen() {
         {/* Ações */}
         <View style={styles.actionsSection}>
           <TouchableOpacity
-            style={styles.actionItem}
-            onPress={handleLogout}
+            style={[styles.actionItem, deletando && styles.actionItemDisabled]}
+            onPress={() => {
+              console.log('Botão Sair pressionado');
+              handleLogout();
+            }}
             activeOpacity={0.7}
+            disabled={deletando}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.error + '15' }]}>
               <Ionicons name="log-out-outline" size={24} color={colors.error} />
@@ -212,23 +231,66 @@ export default function PerfilScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.actionItem}
-            onPress={handleDeletarConta}
+            style={[styles.actionItem, deletando && styles.actionItemDisabled]}
+            onPress={() => {
+              console.log('Botão Excluir conta pressionado');
+              handleDeletarConta();
+            }}
             activeOpacity={0.7}
+            disabled={deletando}
           >
             <View style={[styles.actionIcon, { backgroundColor: colors.error + '15' }]}>
-              <Ionicons name="trash-outline" size={24} color={colors.error} />
+              {deletando ? (
+                <ActivityIndicator size="small" color={colors.error} />
+              ) : (
+                <Ionicons name="trash-outline" size={24} color={colors.error} />
+              )}
             </View>
             <View style={styles.actionContent}>
               <Text style={[styles.actionTitle, { color: colors.error }]}>
-                Excluir conta
+                {deletando ? 'Excluindo conta...' : 'Excluir conta'}
               </Text>
-              <Text style={styles.actionSubtitle}>Remover permanentemente sua conta</Text>
+              <Text style={styles.actionSubtitle}>
+                {deletando
+                  ? 'Aguarde, isso pode levar alguns segundos'
+                  : 'Remover permanentemente sua conta'}
+              </Text>
             </View>
-            <Ionicons name="chevron-forward" size={24} color={colors.textTertiary} />
+            {!deletando && (
+              <Ionicons name="chevron-forward" size={24} color={colors.textTertiary} />
+            )}
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Diálogos de Confirmação */}
+      <ConfirmDialog
+        visible={showLogoutDialog}
+        title="Sair"
+        message="Tem certeza que deseja sair?"
+        confirmText="Sair"
+        cancelText="Cancelar"
+        onConfirm={confirmLogout}
+        onCancel={() => {
+          console.log('Logout cancelado');
+          setShowLogoutDialog(false);
+        }}
+        type="default"
+      />
+
+      <ConfirmDialog
+        visible={showDeleteDialog}
+        title="Excluir Conta"
+        message="Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita e todos os seus dados serão perdidos permanentemente."
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          console.log('Exclusão cancelada');
+          setShowDeleteDialog(false);
+        }}
+        type="danger"
+      />
     </ScrollView>
   );
 }
@@ -362,5 +424,8 @@ const styles = StyleSheet.create({
   actionSubtitle: {
     fontSize: 14,
     color: colors.textSecondary,
+  },
+  actionItemDisabled: {
+    opacity: 0.5,
   },
 });
