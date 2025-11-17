@@ -17,6 +17,7 @@ Aplicativo mobile React Native com Expo para gerenciamento de finanças pessoais
 - ✅ Dashboard com resumo financeiro
 - ✅ CRUD completo de transações
 - ✅ CRUD completo de categorias
+- ✅ CRUD completo de usuário
 - ✅ Perfil do usuário
 - ✅ Design moderno e responsivo
 
